@@ -1,0 +1,22 @@
+{
+  "build": "V3_DIRECTION_FINAL",
+  "date": "2026-10-06",
+  "neighbor_span": 9,
+  "baseline": 0.24324324324324326,
+  "simulation_rounds": [
+    {"seed": 20261006, "sessions_per_mode": 4000, "spins_per_session": 60, "fair_hit_rate": 0.24428645833333335, "directional_pattern_hit_rate": 0.5235, "fair_false_strong_rate": 0.005, "directional_pattern_strong_detection_rate": 0.92475},
+    {"seed": 9102026, "sessions_per_mode": 4000, "spins_per_session": 60, "fair_hit_rate": 0.24454166666666666, "directional_pattern_hit_rate": 0.5259114583333333, "fair_false_strong_rate": 0.00775, "directional_pattern_strong_detection_rate": 0.9205},
+    {"seed": 314159, "sessions_per_mode": 4000, "spins_per_session": 60, "fair_hit_rate": 0.243578125, "directional_pattern_hit_rate": 0.52415625, "fair_false_strong_rate": 0.0065, "directional_pattern_strong_detection_rate": 0.9255}
+  ],
+  "checks": {
+    "javascript_syntax": "PASS",
+    "wheel_has_37_unique_numbers": "PASS",
+    "every_prediction_zone_has_9_unique_numbers": "PASS",
+    "zone_wraparound_zero": "PASS",
+    "legacy_numeric_data_migration": "PASS",
+    "rolling_backtest_zero_center_bug": "FIXED_AND_PASS",
+    "all_javascript_dom_ids_exist": "PASS",
+    "single_javascript_source_only": "PASS"
+  },
+  "notes": "Synthetic directional tests validate that the algorithm can learn a repeated direction-conditioned pattern. They do not imply a physical edge on a fair real roulette wheel."
+}
