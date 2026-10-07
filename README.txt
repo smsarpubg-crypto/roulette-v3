@@ -1,25 +1,18 @@
-BONHAYAN Roulette Tracker V7 Auto Vision
+BONHAYAN Roulette Tracker V8 — Strict Auto Vision
 
-الجديد في V7:
-- قراءة تلقائية من كاميرا الهاتف أو فيديو محفوظ.
-- قفل تلقائي تقريبي على مركز/حافة العجلة من الحركة.
-- تقدير RPM العجلة من الانزياح الزاوي لنمط الحلقة الداخلية.
-- تتبع الكورة في الحلقة الخارجية وتقدير RPM واتجاهها.
-- اكتشاف جيب 0 الأخضر واستخدامه كمرجع لترتيب العجلة الأوروبية.
-- تعبئة قياس 1 وقياس 2 والفاصل والاتجاه والمرجع تلقائياً.
-- رصد اهتزاز/فقد تتبع ورفع شدة الشذوذ تلقائياً.
-- الخانات اليدوية ما زالت موجودة كخطة احتياط.
+What changed:
+- No RPM, direction, or reference-pocket values are written before wheel authentication locks.
+- Authentication requires multiple independent cues: wheel ring, 37-pocket cadence, stable rotor motion, separate ball motion, green-zero evidence, and ball/rotor motion separation.
+- Requires 18 consecutive authenticated frames to lock.
+- Loses lock after 10 bad frames and clears all automatically written measurements.
+- Static circular graphics and motionless images cannot pass because both rotor and ball motion are mandatory.
 
-طريقة الاستخدام على iPhone:
-1) افتح الصفحة عبر HTTPS (GitHub Pages مناسب).
-2) اضغط فتح الكاميرا واسمح بالكاميرا.
-3) خل العجلة كاملة داخل الإطار وثبّت الهاتف قدر الإمكان.
-4) انتظر لين جودة القراءة ترتفع.
-5) النظام يعبّي القياسات تلقائياً قبل النتيجة.
-6) بعد ظهور النتيجة اضغط الرقم لتخزين الفرة مع القياسات.
+Testing:
+- JavaScript syntax checked with Node.
+- 1,000,000 synthetic gate cases tested.
+- 500,000 mandatory-signal-negative cases: 0 false passes.
+- 250,000 circular/impostor scenarios: 0 false passes.
+- 250,000 plausible-valid metric cases: strict gate intentionally accepted only the stronger subset.
 
-ملاحظات مهمة:
-- هذه رؤية حاسوبية محلية داخل المتصفح؛ لا ترفع الفيديو لسيرفر.
-- الدقة تعتمد بقوة على زاوية التصوير، الإضاءة، ظهور جيب 0، ومعدل الإطارات.
-- إذا كانت العجلة صغيرة جداً أو محجوبة، سيطلب النظام تثبيت/تحسين الصورة بدلاً من اختراع قياس.
-- لا يوجد ضمان لنتيجة أو ربح.
+Important:
+These are synthetic regression tests. Camera/video conditions (angle, blur, reflections, compression, table design) still need validation on real roulette footage; V8 is designed to refuse uncertain scenes rather than invent readings.
