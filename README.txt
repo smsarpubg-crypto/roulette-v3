@@ -1,12 +1,11 @@
-BONHAYAN Roulette Tracker V17.4 — COMPLETE DEPLOY
+BONHAYAN Roulette Tracker V16 — DUBIBET REGIME ENGINE
 
-ارفع كل الملفات الموجودة داخل هذا المجلد مباشرة إلى جذر مستودع GitHub Pages.
-لا ترفع المجلد نفسه داخل مجلد فرعي.
-
-الملفات:
-- index.html : التطبيق كامل (HTML + CSS + JavaScript مدمج)
-- 404.html   : نسخة احتياطية من التطبيق لمسارات GitHub Pages
-- .nojekyll  : يمنع Jekyll من معالجة الملفات
-- VERSION.txt: رقم البناء
-
-Build: V17.4 COMPLETE DEPLOY
+- Default coverage: 18 numbers.
+- 59 base experts + 59 inverse experts = 118.
+- Regime detector uses signed wheel delta, delta magnitude and acceleration.
+- Only the top 8 experts for the current regime are blended.
+- 24-spin warm-up.
+- Final regime parameters selected on two development splits: lookback 72, half-life 48, eta 1, exact 3/3 regime match, top 8 experts.
+- Walk-forward evaluation never sees the next result.
+- Designed from the same Dubibet Auto Roulette data supplied by the user.
+- No guarantee of profit or future predictive edge.
