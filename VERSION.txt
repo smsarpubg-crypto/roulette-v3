@@ -1,0 +1,5 @@
+BONHAYAN Roulette Tracker
+Version: V17.4 COMPLETE DEPLOY
+Build date: 2026-10-07
+Standalone: Yes
+External JS required: No
