@@ -1,9 +1,0 @@
-{
-  "invariantCases": 1000000,
-  "fairSessions": 500,
-  "fairCandidates": 0,
-  "fairCandidateRate": 0,
-  "patternSessions": 200,
-  "patternedCandidates": 200,
-  "patternCandidateRate": 1
-}
