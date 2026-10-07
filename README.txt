@@ -1,18 +1,12 @@
-BONHAYAN Roulette Tracker V8 — Strict Auto Vision
+BONHAYAN Roulette Tracker V9 Auto Bounce
 
-What changed:
-- No RPM, direction, or reference-pocket values are written before wheel authentication locks.
-- Authentication requires multiple independent cues: wheel ring, 37-pocket cadence, stable rotor motion, separate ball motion, green-zero evidence, and ball/rotor motion separation.
-- Requires 18 consecutive authenticated frames to lock.
-- Loses lock after 10 bad frames and clears all automatically written measurements.
-- Static circular graphics and motionless images cannot pass because both rotor and ball motion are mandatory.
+What changed from V8:
+- Removed camera/video completely.
+- Removed RPM and manual speed inputs completely.
+- Removed manual anomaly/bounce inputs.
+- User only records the landed number and starts a new dealer when the dealer changes.
+- Added automatic bounce-volatility proxy from wheel-pocket transitions.
+- Added strict prediction gates: minimum dealer sample, analog count, adjusted local mass, pattern stability, walk-forward sample, walk-forward rate, and 95% Wilson lower bound above the 9/37 baseline.
 
-Testing:
-- JavaScript syntax checked with Node.
-- 1,000,000 synthetic gate cases tested.
-- 500,000 mandatory-signal-negative cases: 0 false passes.
-- 250,000 circular/impostor scenarios: 0 false passes.
-- 250,000 plausible-valid metric cases: strict gate intentionally accepted only the stronger subset.
-
-Important:
-These are synthetic regression tests. Camera/video conditions (angle, blur, reflections, compression, table design) still need validation on real roulette footage; V8 is designed to refuse uncertain scenes rather than invent readings.
+Important limitation:
+Without camera/video/sensors the app cannot physically observe the ball bounce. The "bounce" model is an inferred landing-dispersion proxy computed from pocket-to-pocket transitions. The UI states this explicitly.
