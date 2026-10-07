@@ -3,7 +3,7 @@
 const wheel=[0,32,15,19,4,21,2,25,17,34,6,27,13,36,11,30,8,23,10,5,24,16,33,1,20,14,31,9,22,18,29,7,28,12,35,3,26];
 const red=new Set([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36]);
 const pos=new Map(wheel.map((n,i)=>[n,i]));
-const STORAGE='bonhayan_v16_spins', SETTINGS='bonhayan_v16_settings';
+const STORAGE='bonhayan_v17_spins', SETTINGS='bonhayan_v17_settings';
 const $=id=>typeof document!=='undefined'?document.getElementById(id):null;
 const mod=(n,m)=>((n%m)+m)%m;
 const pct=x=>Number.isFinite(x)?(x*100).toFixed(1)+'%':'—';
@@ -31,15 +31,23 @@ function antiScore(p){const mx=Math.max(...p),mn=Math.min(...p);return norm(p.ma
 function regime(nums){if(nums.length<4)return[0,0,0];const d1=signedDelta(nums.at(-3),nums.at(-2)),d2=signedDelta(nums.at(-2),nums.at(-1));const sg=d2>2?1:d2<-2?-1:0,mg=Math.abs(d2)<=6?0:Math.abs(d2)<=12?1:2,ac=d2-d1,ag=ac>3?1:ac<-3?-1:0;return[sg,mg,ag]}
 function expertPacks(nums){const p=BASE.map(fn=>fn(nums));return p.concat(p.map(antiScore))}
 function hitOf(scores,n,count=18){return topFromScores(scores,count).includes(n)}
-function regimeWeights(nums,count=18){
-  const base=count/37,lookback=72,halfLife=48,eta=1,topK=8,shrink=8;
+const CFG_STABLE={name:'ثابت',lookback:72,halfLife:48,eta:1,topK:8,simMin:3};
+const CFG_FAST={name:'سريع',lookback:48,halfLife:24,eta:1.5,topK:8,simMin:2};
+const SELECTOR_WINDOW=8, SELECTOR_SHRINK=2;
+function tableProfile(nums){
+  if(nums.length<24)return {name:'تعلم',cfg:CFG_STABLE};
+  const choice=selectorChoice(nums,18,false);
+  return {name:choice===1?'سريع متكيف':'ثابت متزن',cfg:choice===1?CFG_FAST:CFG_STABLE};
+}
+function regimeWeightsWithConfig(nums,count=18,cfg=CFG_STABLE){
+  const base=count/37,lookback=cfg.lookback,halfLife=cfg.halfLife,eta=cfg.eta,topK=cfg.topK,shrink=8,simMin=cfg.simMin;
   const packs=expertPacks(nums),E=packs.length,weights=Array(E).fill(1);
   const start=Math.max(18,nums.length-lookback),cur=regime(nums);
   if(nums.length>18){
     const h=Array(E).fill(0),rwSum=Array(E).fill(0);
     for(let i=start;i<nums.length;i++){
       const pre=nums.slice(0,i),r=regime(pre);let sim=0;for(let k=0;k<3;k++)if(r[k]===cur[k])sim++;
-      if(sim<3)continue;const w=ew(nums.length-1-i,halfLife)*(1+sim/3),pp=expertPacks(pre);
+      if(sim<simMin)continue;const w=ew(nums.length-1-i,halfLife)*(1+sim/3),pp=expertPacks(pre);
       for(let e=0;e<E;e++){rwSum[e]+=w;if(hitOf(pp[e],nums[i],count))h[e]+=w}
     }
     for(let e=0;e<E;e++){
@@ -51,22 +59,97 @@ function regimeWeights(nums,count=18){
   for(let e=0;e<E;e++)weights[e]/=sw||1;
   return {weights,packs};
 }
-function rankedPrediction(nums,count=18){if(nums.length<24)return[];const {weights,packs}=regimeWeights(nums,count),out=Array(37).fill(0);for(let e=0;e<packs.length;e++)if(weights[e])for(let i=0;i<37;i++)out[i]+=packs[e][i]*weights[e];return topFromScores(out,count)}
-function walkForward(nums,count=18){let k=0,n=0;const recent=[];for(let i=24;i<nums.length;i++){const p=rankedPrediction(nums.slice(0,i),count);if(!p.length)continue;const ok=p.includes(nums[i]);n++;if(ok)k++;recent.push(ok?1:0)}return{k,n,rate:n?k/n:0,baseline:count/37,recent:recent.slice(-10)}}
+function scoreFromConfig(nums,count,cfg){
+  const {weights,packs}=regimeWeightsWithConfig(nums,count,cfg),out=Array(37).fill(0);
+  for(let e=0;e<packs.length;e++)if(weights[e])for(let i=0;i<37;i++)out[i]+=packs[e][i]*weights[e];
+  return out;
+}
+function predictionFromConfig(nums,count,cfg){return topFromScores(scoreFromConfig(nums,count,cfg),count)}
+function selectorChoice(nums,count=18,full=true){
+  if(nums.length<32)return 0;
+  const base=count/37, start=Math.max(24,nums.length-SELECTOR_WINDOW),hits=[0,0],n=0;
+  for(let i=start;i<nums.length;i++){
+    const pre=nums.slice(0,i), actual=nums[i];
+    if(predictionFromConfig(pre,count,CFG_STABLE).includes(actual))hits[0]++;
+    if(predictionFromConfig(pre,count,CFG_FAST).includes(actual))hits[1]++;
+    n++;
+  }
+  const p0=(hits[0]+base*SELECTOR_SHRINK)/(n+SELECTOR_SHRINK),p1=(hits[1]+base*SELECTOR_SHRINK)/(n+SELECTOR_SHRINK);
+  return p1>p0?1:0;
+}
+function regimeWeights(nums,count=18){const c=selectorChoice(nums,count);return regimeWeightsWithConfig(nums,count,c?CFG_FAST:CFG_STABLE)}
+function rankedPrediction(nums,count=18){if(nums.length<24)return[];const c=selectorChoice(nums,count);return predictionFromConfig(nums,count,c?CFG_FAST:CFG_STABLE)}
+function walkForward(nums,count=18){
+  let k=0,n=0;const recent=[],base=count/37,hist=[[],[]];
+  for(let i=24;i<nums.length;i++){
+    const pre=nums.slice(0,i), p0=predictionFromConfig(pre,count,CFG_STABLE), p1=predictionFromConfig(pre,count,CFG_FAST);
+    let choice=0;if(i>=32){const s0=hist[0].slice(-SELECTOR_WINDOW),s1=hist[1].slice(-SELECTOR_WINDOW);const h0=s0.reduce((a,b)=>a+b,0),h1=s1.reduce((a,b)=>a+b,0),nn=Math.min(SELECTOR_WINDOW,s0.length);const q0=(h0+base*SELECTOR_SHRINK)/(nn+SELECTOR_SHRINK),q1=(h1+base*SELECTOR_SHRINK)/(nn+SELECTOR_SHRINK);choice=q1>q0?1:0}
+    const ok0=p0.includes(nums[i]),ok1=p1.includes(nums[i]);hist[0].push(ok0?1:0);hist[1].push(ok1?1:0);const ok=choice?ok1:ok0;n++;if(ok)k++;recent.push(ok?1:0)
+  }
+  return{k,n,rate:n?k/n:0,baseline:base,recent:recent.slice(-10)}
+}
 function modelAgreement(nums,count=18){if(nums.length<24)return 0;const {weights,packs}=regimeWeights(nums,count);const ids=weights.map((w,i)=>[w,i]).filter(x=>x[0]>0).map(x=>x[1]);const sets=ids.map(i=>new Set(topFromScores(packs[i],count)));let s=0,p=0;for(let i=0;i<sets.length;i++)for(let j=i+1;j<sets.length;j++){let inter=0;for(const x of sets[i])if(sets[j].has(x))inter++;const u=sets[i].size+sets[j].size-inter;s+=u?inter/u:0;p++}return p?s/p:0}
 function topSectorCenter(picks){if(!picks.length)return null;let best={m:-1,c:null};for(let i=0;i<37;i++){let m=0;for(let k=-4;k<=4;k++)if(picks.includes(wheel[mod(i+k,37)]))m++;if(m>best.m)best={m,c:wheel[i]}}return best.c}
-let spins=[],settings={tableId:0,coverage:18};
-if(typeof localStorage!=='undefined')try{const a=JSON.parse(localStorage.getItem(STORAGE)||'null');if(Array.isArray(a))spins=a;else{for(const key of ['bonhayan_v15_spins','bonhayan_v14_spins']){const x=JSON.parse(localStorage.getItem(key)||'null');if(Array.isArray(x)){spins=x;break}}}const st=JSON.parse(localStorage.getItem(SETTINGS)||'null');if(st){if(Number.isInteger(st.tableId))settings.tableId=st.tableId;if([9,18,27,30,33].includes(st.coverage))settings.coverage=st.coverage}}catch(e){}
+function neighbor1Of(n){const i=pos.get(n);return [wheel[mod(i-1,37)],n,wheel[mod(i+1,37)]]}
+function neighbor1Plan(picks){
+  if(!picks.length)return[];
+  const selected=new Set(picks), uncovered=new Set(picks), rank=new Map(picks.map((n,i)=>[n,i]));
+  const plan=[];
+  while(uncovered.size){
+    let best=null;
+    for(const c of picks){
+      const triple=neighbor1Of(c), covered=triple.filter(n=>uncovered.has(n));
+      if(!covered.length)continue;
+      const already=triple.filter(n=>selected.has(n)).length;
+      const score=[covered.length,already,-(rank.get(c)??999)];
+      if(!best||score[0]>best.score[0]||(score[0]===best.score[0]&&score[1]>best.score[1])||(score[0]===best.score[0]&&score[1]===best.score[1]&&score[2]>best.score[2]))best={c,triple,covered,score};
+    }
+    if(!best)break;
+    best.covered.forEach(n=>uncovered.delete(n));
+    plan.push({center:best.c,covered:best.triple.filter(n=>selected.has(n)),extras:best.triple.filter(n=>!selected.has(n))});
+  }
+  return plan;
+}
+function smartSector18(nums){
+  if(nums.length<24)return{center:null,core:[],exceptions:[],all:[]};
+  const top18=rankedPrediction(nums,18), center=topSectorCenter(top18);
+  if(center==null)return{center:null,core:[],exceptions:[],all:[]};
+  const choice=selectorChoice(nums,18), cfg=choice?CFG_FAST:CFG_STABLE, scores=scoreFromConfig(nums,18,cfg), ci=pos.get(center);
+  const core=[];
+  for(let k=-5;k<=5;k++)core.push(wheel[mod(ci+k,37)]);
+  const left=wheel[mod(ci-6,37)], right=wheel[mod(ci+6,37)];
+  core.push(scores[pos.get(right)]>=scores[pos.get(left)]?right:left);
+  const coreSet=new Set(core), exceptions=top18.filter(n=>!coreSet.has(n)).slice(0,6), all=[...core,...exceptions];
+  return{center,core,exceptions,all,top18};
+}
+let spins=[],settings={tableId:0,coverage:18,layoutMode:'neighbor1'};
+if(typeof localStorage!=='undefined')try{const a=JSON.parse(localStorage.getItem(STORAGE)||'null');if(Array.isArray(a))spins=a;else{for(const key of ['bonhayan_v15_spins','bonhayan_v14_spins']){const x=JSON.parse(localStorage.getItem(key)||'null');if(Array.isArray(x)){spins=x;break}}}const st=JSON.parse(localStorage.getItem(SETTINGS)||'null');if(st){if(Number.isInteger(st.tableId))settings.tableId=st.tableId;if([9,18,27,30,33].includes(st.coverage))settings.coverage=st.coverage;if(['neighbor1','smart12x6'].includes(st.layoutMode))settings.layoutMode=st.layoutMode}}catch(e){}
 function save(){if(typeof localStorage!=='undefined'){localStorage.setItem(STORAGE,JSON.stringify(spins));localStorage.setItem(SETTINGS,JSON.stringify(settings))}}
 function segment(){return spins.filter(x=>(x.tableId??x.dealerId??0)===settings.tableId).map(x=>x.n)}
 function addSpin(n){spins.push({n,tableId:settings.tableId});save();render()}
 function render(){if(typeof document==='undefined')return;const nums=segment(),c=settings.coverage,picks=rankedPrediction(nums,c),wf=walkForward(nums,c),base=c/37,agr=modelAgreement(nums,c),pack=nums.length>=24?regimeWeights(nums,c):null;
-$('spinCount').textContent=spins.length;$('dealerSpinCount').textContent=nums.length;$('engineStage').textContent=nums.length<24?'تعلم':'Regime مباشر';$('trustProgress').textContent=nums.length<24?Math.round(nums.length/24*100)+'%':'100%';$('activeModels').textContent=String(BASE.length*2);$('modelAgreement').textContent=nums.length>=24?pct(agr):'—';
-$('modelList').innerHTML=pack?pack.weights.map((w,i)=>[w,i]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).map(([w,i])=>`${i<BASE.length?NAMES[i]:'عكس '+NAMES[i-BASE.length]}: ${(w*100).toFixed(0)}%`).join('<br>'):'المحرك ينتظر 24 فرة لبناء حالة الحركة.';
-$('currentMass').textContent=picks.length?`${picks.length} رقم`:'—';$('modelStability').textContent=nums.length>=24?pct(agr):'—';$('shadowTests').textContent=wf.n?`${wf.k}/${wf.n}`:'0';$('shadowRate').textContent=wf.n?pct(wf.rate):'—';$('lowerBound').textContent=pct(base);const r10=wf.recent.length?wf.recent.reduce((a,b)=>a+b,0)/wf.recent.length:NaN;$('recent10').textContent=Number.isFinite(r10)?`${wf.recent.reduce((a,b)=>a+b,0)}/${wf.recent.length} = ${pct(r10)}`:'—';$('baselineLabel').textContent=`الخط الطبيعي لـ${c} رقم`;$('baselineValue').textContent=pct(base);$('betDecision').textContent=nums.length>=24?'توقع Regime جاهز':'نحتاج 24 فرة أول';$('betReason').textContent=nums.length>=24?`V16 يختار 8 خبراء فقط حسب حالة الحركة الحالية، ويستفيد حتى من النماذج التي تثبت أنها عكسية. Walk‑Forward الحالي ${wf.n?pct(wf.rate):'—'} مقابل ${pct(base)}.`:'نجمع 24 نتيجة حتى نحدد نظام الحركة الحالي.';$('predictionCenter').textContent=picks.length?(topSectorCenter(picks)??'—'):'—';const z=$('predictionZone');z.innerHTML='';if(picks.length)picks.forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent=n;z.appendChild(s)});else z.textContent='—';$('gateList').innerHTML=nums.length>=24?`✅ 118 خبير (59 نموذج + 59 عكسي)<br>✅ Regime من اتجاه/حجم الحركة/التسارع<br>✅ أفضل 8 خبراء فقط لكل حالة<br>✅ Walk‑Forward ما يشوف النتيجة القادمة<br>⚠️ خط الأساس ${pct(base)}`:`⏳ ${24-nums.length} فرات متبقية للإحماء`;const rr=$('recentResults');rr.innerHTML='';if(!spins.length)rr.innerHTML='<span class="small">ما سجلت شي للحين.</span>';else spins.slice(-20).reverse().forEach(s=>{const x=document.createElement('span');x.className='chip';x.textContent=s.n;rr.appendChild(x)});}
+$('spinCount').textContent=spins.length;$('dealerSpinCount').textContent=nums.length;$('engineStage').textContent=nums.length<24?'تعلم':('V17 '+tableProfile(nums).name);$('trustProgress').textContent=nums.length<24?Math.round(nums.length/24*100)+'%':'100%';$('activeModels').textContent=String(BASE.length*2);$('modelAgreement').textContent=nums.length>=24?pct(agr):'—';
+$('modelList').innerHTML=pack?`وضع المختار: <b>${tableProfile(nums).name}</b><br>`+pack.weights.map((w,i)=>[w,i]).filter(x=>x[0]>0).sort((a,b)=>b[0]-a[0]).map(([w,i])=>`${i<BASE.length?NAMES[i]:'عكس '+NAMES[i-BASE.length]}: ${(w*100).toFixed(0)}%`).join('<br>'):'المحرك ينتظر 24 فرة لبناء حالة الحركة.';
+$('currentMass').textContent=picks.length?`${picks.length} رقم`:'—';$('modelStability').textContent=nums.length>=24?pct(agr):'—';$('shadowTests').textContent=wf.n?`${wf.k}/${wf.n}`:'0';$('shadowRate').textContent=wf.n?pct(wf.rate):'—';$('lowerBound').textContent=pct(base);const r10=wf.recent.length?wf.recent.reduce((a,b)=>a+b,0)/wf.recent.length:NaN;$('recent10').textContent=Number.isFinite(r10)?`${wf.recent.reduce((a,b)=>a+b,0)}/${wf.recent.length} = ${pct(r10)}`:'—';$('baselineLabel').textContent=`الخط الطبيعي لـ${c} رقم`;$('baselineValue').textContent=pct(base);$('betDecision').textContent=nums.length>=24?'توقع Regime جاهز':'نحتاج 24 فرة أول';$('betReason').textContent=nums.length>=24?`V17 يحدد نوع الطاولة أولاً ثم يختار خبراء الحالة الحالية، ويستفيد حتى من النماذج التي تثبت أنها عكسية. Walk‑Forward الحالي ${wf.n?pct(wf.rate):'—'} مقابل ${pct(base)}.`:'نجمع 24 نتيجة حتى نحدد نظام الحركة الحالي.';$('predictionCenter').textContent=picks.length?(topSectorCenter(picks)??'—'):'—';const z=$('predictionZone');z.innerHTML='';if(picks.length)picks.forEach(n=>{const s=document.createElement('span');s.className='chip';s.textContent=n;z.appendChild(s)});else z.textContent='—';const np=$('neighborPlan');np.innerHTML='';
+if(settings.layoutMode==='smart12x6'){
+  $('layoutTitle').textContent='قطاع ذكي — 12 حول المركز + 6 استثنائية';
+  $('layoutNote').textContent='هالخيار بديل للـNeighbor 1: 12 رقم متصلة حول مركز القطاع + أعلى 6 أرقام استثنائية من ترتيب المحرك خارج هالقطاع. المجموع 18 رقم.';
+  const sm=smartSector18(nums);
+  if(sm.all.length){
+    $('neighborSummary').textContent=`المركز ${sm.center} — 12 قطاع + 6 استثنائية = 18 رقم`;
+    const r1=document.createElement('div');r1.className='neighborRow';r1.innerHTML=`<b>12 حول المركز:</b> ${sm.core.join('، ')}`;np.appendChild(r1);
+    const r2=document.createElement('div');r2.className='neighborRow';r2.innerHTML=`<b>6 استثنائية:</b> ${sm.exceptions.join('، ')}`;np.appendChild(r2);
+    const r3=document.createElement('div');r3.className='neighborRow';r3.innerHTML=`<b>التغطية النهائية:</b> ${sm.all.join('، ')}`;np.appendChild(r3);
+  }else{$('neighborSummary').textContent='نحتاج 24 فرة أول';np.textContent='—'}
+}else{
+  $('layoutTitle').textContent='مراكز الرهان المقترحة — Neighbor 1';
+  $('layoutNote').textContent='ملاحظة: أعلى الأرقام المختارة من المحرك ما تتغير. هالقسم بس يجمع المتجاور منها على ترتيب العجلة. أي رقم خارج القائمة يدخل بسبب Neighbor 1 ينكتب بلون مختلف.';
+  if(picks.length){const plan=neighbor1Plan(picks);plan.forEach((g,idx)=>{const row=document.createElement('div');row.className='neighborRow';const covered=g.covered.join('، ');const extras=g.extras.length?` <span class="extra">+ خارج الـ${c}: ${g.extras.join('، ')}</span>`:'';row.innerHTML=`<b>${idx+1}) مركز ${g.center}</b> — Neighbor 1 يغطي من أعلى ${c}: ${covered}${extras}`;np.appendChild(row)});$('neighborSummary').textContent=`${plan.length} مراكز بدل ${c} أرقام منفصلة — ترتيب أعلى ${c} نفسه ما تغير.`}else{$('neighborSummary').textContent='—';np.textContent='—'}
+}
+$('gateList').innerHTML=nums.length>=24?`✅ 118 خبير (59 نموذج + 59 عكسي)<br>✅ Multi‑Table Selector يحدد: هادئ / اتجاهي / متقلب / مختلط<br>✅ Regime من اتجاه/حجم الحركة/التسارع<br>✅ Walk‑Forward ما يشوف النتيجة القادمة<br>⚠️ خط الأساس ${pct(base)}`:`⏳ ${24-nums.length} فرات متبقية للإحماء`;const rr=$('recentResults');rr.innerHTML='';if(!spins.length)rr.innerHTML='<span class="small">ما سجلت شي للحين.</span>';else spins.slice(-20).reverse().forEach(s=>{const x=document.createElement('span');x.className='chip';x.textContent=s.n;rr.appendChild(x)});}
 if(typeof document!=='undefined'){
  const grid=$('numberGrid');for(let n=0;n<=36;n++){const b=document.createElement('button');b.className='num '+(n===0?'green':red.has(n)?'red':'');b.textContent=n;b.onclick=()=>addSpin(n);grid.appendChild(b)}
- $('undoBtn').onclick=()=>{if(spins.length){spins.pop();save();render()}};$('newDealerBtn').textContent='طاولة أوتو جديدة';$('newDealerBtn').onclick=()=>{if(confirm('نبدأ طاولة Auto جديدة بتحليل مستقل؟')){settings.tableId++;save();render()}};$('resetBtn').onclick=()=>{if(confirm('متأكد تبا تمسح كل النتائج؟')){spins=[];settings.tableId=0;save();render()}};$('coverage').value=String(settings.coverage);$('coverage').onchange=e=>{settings.coverage=Number(e.target.value);save();render()};render();
+ $('undoBtn').onclick=()=>{if(spins.length){spins.pop();save();render()}};$('newDealerBtn').textContent='طاولة أوتو جديدة';$('newDealerBtn').onclick=()=>{if(confirm('نبدأ طاولة Auto جديدة بتحليل مستقل؟')){settings.tableId++;save();render()}};$('resetBtn').onclick=()=>{if(confirm('متأكد تبا تمسح كل النتائج؟')){spins=[];settings.tableId=0;save();render()}};$('coverage').value=String(settings.coverage);$('coverage').onchange=e=>{settings.coverage=Number(e.target.value);save();render()};$('layoutMode').value=settings.layoutMode;$('layoutMode').onchange=e=>{settings.layoutMode=e.target.value;save();render()};render();
 }
-const api={wheel,BASE,NAMES,regime,regimeWeights,rankedPrediction,walkForward};if(typeof window!=='undefined')window.BONHAYAN_V16=api;if(typeof module!=='undefined')module.exports=api;
+const api={wheel,BASE,NAMES,regime,tableProfile,CFG_STABLE,CFG_FAST,selectorChoice,regimeWeights,regimeWeightsWithConfig,rankedPrediction,walkForward,neighbor1Of,neighbor1Plan,smartSector18};if(typeof window!=='undefined')window.BONHAYAN_V17=api;if(typeof module!=='undefined')module.exports=api;
 })();
