@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#111827">
-<title>BONHAYAN Roulette Tracker V12 Shadow Validation</title>
+<title>BONHAYAN Roulette Tracker V16 DUBIBET REGIME ENGINE</title>
 <style>
 :root{--bg:#f7f7f8;--card:#fff;--text:#111827;--muted:#6b7280;--line:#d1d5db;--accent:#2563eb;--red:#dc2626}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,Arial,sans-serif}.wrap{max-width:960px;margin:auto;padding:16px}h1{font-size:27px;margin:6px 0 4px}.sub,.small{color:var(--muted);font-size:13px;line-height:1.65}.grid{display:grid;gap:12px}.cols{grid-template-columns:1.1fr .9fr}@media(max-width:760px){.cols{grid-template-columns:1fr}}.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}.topline{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;flex-wrap:wrap}.count{font-size:14px;color:var(--muted)}.count b{color:var(--text)}.numgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px}@media(min-width:580px){.numgrid{grid-template-columns:repeat(8,1fr)}}.num{min-height:48px;border:2px solid var(--line);border-radius:12px;background:#fafafa;font-size:18px;font-weight:700}.num.red{border-color:#ef4444}.num.green{border-color:#22c55e}button{cursor:pointer;-webkit-tap-highlight-color:transparent}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{min-height:44px;padding:0 14px;border:1px solid var(--line);border-radius:12px;background:#fff;font-size:15px}.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:14px}.stat{border:1px solid var(--line);border-radius:14px;padding:12px}.stat label{display:block;font-size:12px;color:var(--muted)}.stat strong{display:block;font-size:20px;margin-top:4px}.zone,.prediction,.callout{margin-top:10px;border:1px solid var(--line);border-radius:14px;padding:12px;line-height:1.8}.prediction{border-width:2px}.predcenter{font-size:34px;font-weight:900}.chips{display:flex;gap:7px;flex-wrap:wrap}.chip{min-width:38px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;text-align:center;font-weight:700}.metric{display:grid;grid-template-columns:1fr auto;gap:8px;padding:8px 0;border-bottom:1px solid #eee}.metric:last-child{border-bottom:0}.foot{font-size:12px;color:var(--muted);line-height:1.6;margin:14px 2px 4px}.notice{background:#f8fafc}.decision{font-size:22px;font-weight:900}.center{text-align:center}
 </style>
 </head>
 <body>
 <div class="wrap">
-<h1>مراقب الروليت — V12 Shadow Validation</h1>
-<div class="sub">إنت تدخل النتيجة فقط. ما فيه كاميرا ولا RPM ولا إدخال سرعات. النظام يبني قطاع داخلي كل فرة، ويختبره سراً على النتائج اللاحقة. أرقام التوقع تظل مخفية لين ينجح الاختبار المستقبلي بشروط صارمة.</div>
-<div class="callout notice"><b>مهم:</b> بدون فيديو أو حساس ما نقدر نشوف قفزة الكورة فعلياً. مؤشرات القفز والتشتت هنا مستنتجة من انتقالات الجيوب فقط. لذلك V12 يعتمد على <b>التحقق المستقبلي</b> أكثر من شكل النمط داخل البيانات القديمة.</div>
+<h1>مراقب الروليت — V16 DUBIBET REGIME ENGINE</h1>
+<div class="sub">إنت تدخل النتيجة فقط. V16 مخصص لطاولة Dubibet Auto: يحدد Regime الحركة من اتجاه الانتقال وحجمه وتسارعه، ويختار أفضل 8 خبراء من 118 خبيراً بعد كل فرة. التغطية الافتراضية 18 رقم.</div>
+<div class="callout notice"><b>مهم:</b> رفع عدد الأرقام يرفع نسبة الإصابة تلقائياً حتى من غير ذكاء. V16 يقارن أداءه بخط الأساس الطبيعي ويعرض Walk‑Forward. ما يعتمد على قائمة أرقام محفوظة؛ الخبراء والأوزان تتغير مع حالة الحركة.</div>
 <div class="grid cols">
 <section class="card">
 <div class="topline"><div><b>1) سجل الرقم بعد كل فرة</b><div class="small">كل الحسابات الثانية تصير تلقائياً.</div></div><div class="count">فرات الديلر الحالي: <b id="dealerSpinCount">0</b></div></div>
@@ -22,23 +22,21 @@
 <div class="small" style="margin-top:10px">كل الفرات المحفوظة: <b id="spinCount">0</b></div>
 </section>
 <section class="card">
-<b>2) القفز والتشتت المستنتج</b>
-<div class="stats"><div class="stat"><label>حالة الحركة</label><strong id="bounceState">—</strong></div><div class="stat"><label>مؤشر التشتت</label><strong id="bounceVolatility">—</strong></div><div class="stat"><label>قفزات كبيرة</label><strong id="longJumpRate">—</strong></div><div class="stat"><label>ثبات النمط</label><strong id="patternStability">—</strong></div></div>
-<div class="zone"><b>القراءة</b><div id="bounceExplain" class="small" style="margin-top:6px">بانتظار بيانات.</div></div>
+<b>2) المحرك التكيفي</b><div class="stats"><div class="stat"><label>نماذج شغالة</label><strong id="activeModels">0</strong></div><div class="stat"><label>اتفاق النماذج</label><strong id="modelAgreement">—</strong></div></div><div class="zone"><b>تفاصيل النماذج</b><div id="modelList" class="small" style="margin-top:6px">—</div></div>
 </section>
 <section class="card">
-<b>3) التحقق الذاتي</b>
+<b>3) الاختبار الحقيقي</b>
 <div class="stats"><div class="stat"><label>مرحلة المحرك</label><strong id="engineStage">تعلم</strong></div><div class="stat"><label>تقدم شروط الثقة</label><strong id="trustProgress">0%</strong></div><div class="stat"><label>تركيز القطاع الحالي</label><strong id="currentMass">—</strong></div><div class="stat"><label>ثبات النموذج الحالي</label><strong id="modelStability">—</strong></div></div>
-<div class="zone"><div class="metric"><span>اختبارات الظل الصحيحة / الكل</span><b id="shadowTests">0</b></div><div class="metric"><span>نسبة إصابة اختبار الظل</span><b id="shadowRate">—</b></div><div class="metric"><span>احتمال أن الأداء صدفة</span><b id="chanceP">—</b></div><div class="metric"><span>آخر 6 اختبارات</span><b id="recent6">—</b></div><div class="metric"><span>الخط الطبيعي لـ9 أرقام</span><b>24.3%</b></div></div>
+<div class="zone"><div class="metric"><span>اختبارات Walk‑Forward الصحيحة / الكل</span><b id="shadowTests">0</b></div><div class="metric"><span>نسبة إصابة Walk‑Forward</span><b id="shadowRate">—</b></div><div class="metric"><span>خط الأساس النظري</span><b id="lowerBound">—</b></div><div class="metric"><span>آخر 10 اختبارات</span><b id="recent10">—</b></div><div class="metric"><span id="baselineLabel">الخط الطبيعي</span><b id="baselineValue">—</b></div></div>
 </section>
 <section class="card">
 <b>4) القرار</b>
-<div class="prediction center"><div id="betDecision" class="decision">لا توقع للحين</div><div class="small" id="betReason">نجمع بيانات ونختبر النموذج.</div><div style="margin-top:10px">مركز القطاع</div><div id="predictionCenter" class="predcenter">—</div><div class="small">9 جيران</div><div id="predictionZone" class="chips" style="justify-content:center;margin-top:8px">—</div></div>
+<div class="zone"><b>حجم التغطية</b><div class="small">9 = اختبار ذكاء صارم، 27/30/33 = إصابات أكثر لكن بتغطية أرقام أكثر.</div><select id="coverage" class="btn" style="width:100%;margin-top:8px"><option value="9">9 أرقام</option><option value="18">18 رقم</option><option value="27">27 رقم</option><option value="30">30 رقم</option><option value="33">33 رقم</option></select></div><div class="prediction center"><div id="betDecision" class="decision">لا توقع للحين</div><div class="small" id="betReason">نجمع بيانات ونختبر النموذج.</div><div style="margin-top:10px">مركز القطاع</div><div id="predictionCenter" class="predcenter">—</div><div class="small">الأرقام المختارة حسب وضع التغطية</div><div id="predictionZone" class="chips" style="justify-content:center;margin-top:8px">—</div></div>
 <div id="gateList" class="zone small">—</div>
 </section>
 <section class="card"><b>آخر النتائج</b><div id="recentResults" class="chips" style="margin-top:10px"></div></section>
 </div>
-<div class="foot">V12 لا يعتبر أي نمط ضماناً. إذا ما اجتازت الإشارة الاختبار المستقبلي المستقل، تظل الأرقام مخفية مهما بدا التاريخ مقنعاً.</div>
+<div class="foot">V16 DUBIBET REGIME ENGINE: أربعة نماذج + ترجيح حسب الأداء السابق + Walk‑Forward + امتناع تلقائي عند ضعف الإشارة. ما في أي ضمان للفوز.</div>
 </div>
 <script src="app.js"></script>
 </body>
